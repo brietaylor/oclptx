@@ -286,7 +286,10 @@ __kernel void OclPtxInterpolate(
       particle_paths[path_index] = temp_pos;
   
     /* Add position to position list */
-    rbtree_insert(&position_set[glid], convert_ushort3(floor(temp_pos)));
+    uint index = floor(temp_pos.x) * attrs.sample_ny * attrs.sample_nz
+               + floor(temp_pos.y) * attrs.sample_nz
+               + floor(temp_pos.z);
+    rbtree_insert(&position_set[glid], index);
     
     if (particle_steps[glid] + 1 == attrs.max_steps) {
       particle_done[glid] = BREAK_MAXSTEPS;
@@ -313,10 +316,7 @@ __kernel void OclPtxInterpolate(
     /* Walk the tree out of order */
     for (i = 0; i < position_set[glid].num_entries; ++i) {
       /* position = x*ny*nz + y*nz + z */
-      ushort3 pos = position_set[glid].nodes[i].data;
-      uint index = pos.x * attrs.sample_ny * attrs.sample_nz
-                 + pos.y * attrs.sample_nz
-                 + pos.z;
+      int index = rbtree_data(&position_set[glid], i);
 
       atomic_inc(&global_pdf[index]);
     }

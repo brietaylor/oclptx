@@ -69,7 +69,7 @@ size_t OclPtxHandler::ParticleSize()
   size += sizeof(cl_ushort);  // complete
   size += sizeof(cl_ushort);  // step_count
 
-  size += 32768;  // position rbtree
+  size += 16384;  // position rbtree
 
   if (env_dat_->save_paths)
     size += attrs_.steps_per_kernel * sizeof(cl_float4);
@@ -102,7 +102,7 @@ void OclPtxHandler::InitParticles()
   gpu_sets_ = new cl::Buffer(
       *context_,
       CL_MEM_READ_WRITE,
-      2 * attrs_.particles_per_side * 32768);  // 32768 == sizeof(struct rbtree)
+      2 * attrs_.particles_per_side * 16384);  // 16384 == sizeof(struct rbtree)
   if (!gpu_sets_)
     abort();
 

@@ -30,21 +30,20 @@
 
 #define LEAF -1
 
-typedef ushort3 data_t;
+typedef int data_t;
 
 struct rbtree_node {
-  data_t data;
+  int data;
   short child[2];  /* I like Julienne Walker's binary tree idiom */
-  int colour;
-} __attribute__((aligned(16)));
+} __attribute__((aligned(8)));
 
 struct rbtree {
-  struct rbtree_node nodes[kMaxSize]; /* 2044 * 16 bytes */
+  struct rbtree_node nodes[kMaxSize]; /* 2041 * 8 bytes */
   short num_entries; /* 2 bytes */
   short root; /* 2 bytes */
   short node_stack[kMaxDepth]; /* 24 bytes */
   short dir_stack[kMaxDepth]; /* 24 bytes */
-  char pad[12]; /* We're 12 bytes short of a nice round 32,768B. */
+  char pad[4]; /* We're 12 bytes short of a nice round 16384B */
 } __attribute__((packed));  /* shouldn't affect the structure packing. */
 
 int eq(data_t a, data_t b)
@@ -54,20 +53,30 @@ int eq(data_t a, data_t b)
 
 int cmp(data_t a, data_t b)
 {
-  if (a.s0 != b.s0)
-    return a.s0 < b.s0;
-  else if (a.s1 != b.s1)
-    return a.s1 < b.s1;
-  else
-    return a.s2 < b.s2;
+  return a < b;
 }
 
 int is_red(global struct rbtree *tree, int node)
 {
-  if ((LEAF != node) && (RED == tree->nodes[node].colour))
+  if ((LEAF != node) && (RED == ((1<<31) & tree->nodes[node].data)))
     return 1;
   else
     return 0;
+}
+
+void rbtree_colour_red(global struct rbtree *tree, int node)
+{
+  tree->nodes[node].data |= (1<<31);
+}
+
+void rbtree_colour_black(global struct rbtree *tree, int node)
+{
+  tree->nodes[node].data &= ~(1<<31);
+}
+
+data_t rbtree_data(global struct rbtree *tree, int node)
+{
+  return tree->nodes[node].data & ~(1<<31);
 }
 
 void rbtree_init(global struct rbtree *tree)
@@ -84,9 +93,9 @@ int rbtree_mknode(global struct rbtree *tree, data_t data)
 
   new_node = tree->num_entries++;
   tree->nodes[new_node].data = data;
+  rbtree_colour_red(tree, new_node);
   tree->nodes[new_node].child[0] = LEAF;
   tree->nodes[new_node].child[1] = LEAF;
-  tree->nodes[new_node].colour = RED;
 
   return new_node;
 }
@@ -106,8 +115,8 @@ int rbtree_rotate_single(global struct rbtree *tree, int root, int dir)
   tree->nodes[root].child[!dir] = tree->nodes[saved].child[dir];
   tree->nodes[saved].child[dir] = root;
 
-  tree->nodes[root].colour = RED;
-  tree->nodes[saved].colour = BLACK;
+  rbtree_colour_red(tree, root);
+  rbtree_colour_black(tree, saved);
 
   return saved;
 }
@@ -162,12 +171,12 @@ int rbtree_fix(global struct rbtree *tree, int stack_pos)
     if (is_red(tree, uncle))
     {
       /* Uncle is red.  Can solve with recolouring */
-      tree->nodes[grandparent].colour = RED;
-      tree->nodes[parent].colour = BLACK;
-      tree->nodes[uncle].colour = BLACK;
+      rbtree_colour_red(tree, grandparent);
+      rbtree_colour_black(tree, parent);
+      rbtree_colour_black(tree, uncle);
 
       /* Make sure the root is always black */
-      tree->nodes[tree->root].colour = BLACK;
+      rbtree_colour_black(tree, tree->root);
     } else {
       /* Uncle is black.  Solve with rotations.
         * ie:
@@ -219,7 +228,7 @@ void rbtree_insert(global struct rbtree *tree, data_t data)
   /* Check if this is the first node added. */
   if (LEAF == tree->root) {
     tree->root = new_node;
-    tree->nodes[new_node].colour = BLACK;
+    rbtree_colour_black(tree, new_node);
     return;
   }
 
@@ -227,10 +236,10 @@ void rbtree_insert(global struct rbtree *tree, data_t data)
   cur_node = tree->root;
   for (stack_pos = 0; stack_pos < kMaxDepth; ++stack_pos)
   {
-    if (eq(tree->nodes[cur_node].data, tree->nodes[new_node].data))
+    if (eq(rbtree_data(tree, cur_node), rbtree_data(tree, new_node)))
       return;  /* duplicates ignored */
 
-    dir = cmp(tree->nodes[cur_node].data, tree->nodes[new_node].data);
+    dir = cmp(rbtree_data(tree, cur_node), rbtree_data(tree, new_node));
 
     /* Put the node and direction onto the stack */
     tree->node_stack[stack_pos] = cur_node;
