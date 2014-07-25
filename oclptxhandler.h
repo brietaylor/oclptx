@@ -87,8 +87,8 @@ class OclPtxHandler{
 
   // Particle Data
   cl::Buffer *gpu_data_;  // Type particle_data
+  cl::Buffer *gpu_sets_;  // Type rbtree
   cl::Buffer *gpu_complete_;  // Type ushort array
-  cl::Buffer *gpu_local_pdf_;
   cl::Buffer *gpu_waypoints_;
   cl::Buffer *gpu_exclusion_;
   cl::Buffer *gpu_loopcheck_;

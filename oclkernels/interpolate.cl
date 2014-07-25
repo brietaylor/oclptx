@@ -8,6 +8,7 @@
  */
  
 #include "attrs.h"
+#include "rbtree.h"
 #include "rng.h"
 
 float3 f_theta_phi_to_xyz(float3 f_theta_phi)
@@ -66,6 +67,7 @@ float3 get_f_theta_phi(global float *f_samples,
 __kernel void OclPtxInterpolate(
   struct particle_attrs attrs,  /* RO */
   __global struct particle_data *state,  /* RW */
+  __global struct rbtree *position_set, /* RW */
 
   // Debugging info
   __global float3 *particle_paths, //RW
@@ -73,7 +75,7 @@ __kernel void OclPtxInterpolate(
 
   // Output
   __global ushort *particle_done, //RW
-  __global uint *particle_pdfs, //RW
+  __global uint   *global_pdf, //RW
   __global ushort *particle_waypoints, //W
   __global ushort *particle_exclusion, //W
   __global float3 *particle_loopcheck_lastdir, //RW
@@ -93,6 +95,7 @@ __kernel void OclPtxInterpolate(
 {
   uint glid = get_global_id(0);
   
+  int i;
   uint path_index;
   uint step;
   uint mask_index;
@@ -131,6 +134,12 @@ __kernel void OclPtxInterpolate(
     particle_steps[glid] = 0;
     return;
   }
+
+  /* New particle.  Do any in-kernel initialization here. */
+  /* TODO(jeff): Initialize waymasks, etc. here instead of in oclptxhandler for
+   * possible performance improvement? */
+  if (0 == particle_steps[glid])
+    rbtree_init(&position_set[glid]);
 
   /* Main loop */
   for (step = 0; step < attrs.steps_per_kernel; ++step)
@@ -276,18 +285,8 @@ __kernel void OclPtxInterpolate(
     if (particle_paths)
       particle_paths[path_index] = temp_pos;
   
-    /* update particle pdf */
-    vertex_num = floor(temp_pos.s0) * attrs.sample_ny * attrs.sample_nz
-               + floor(temp_pos.s1) * attrs.sample_nz
-               + floor(temp_pos.s2);
-
-    entry_num = vertex_num / 32;
-    shift_num = (vertex_num % 32);
-
-    uint entries_per_particle =
-      (attrs.sample_nx * attrs.sample_ny * attrs.sample_nz / 32) + 1;
-
-    particle_pdfs[glid*entries_per_particle + entry_num] |= (1 << shift_num);
+    /* Add position to position list */
+    rbtree_insert(&position_set[glid], convert_ushort3(floor(temp_pos)));
     
     if (particle_steps[glid] + 1 == attrs.max_steps) {
       particle_done[glid] = BREAK_MAXSTEPS;
@@ -305,4 +304,21 @@ __kernel void OclPtxInterpolate(
    */
   if (0 == step)
     particle_steps[glid] = 0;
+
+  /* If finished, add steps to global pdf by walking the set out-of-order */
+  if ((BREAK_INIT != particle_done[glid])
+   && (BREAK_INVALID != particle_done[glid])
+   && (particle_done[glid] > 0)
+   && (STILL_FINISHED != particle_done[glid])) {
+    /* Walk the tree out of order */
+    for (i = 0; i < position_set[glid].num_entries; ++i) {
+      /* position = x*ny*nz + y*nz + z */
+      ushort3 pos = position_set[glid].nodes[i].data;
+      uint index = pos.x * attrs.sample_ny * attrs.sample_nz
+                 + pos.y * attrs.sample_nz
+                 + pos.z;
+
+      atomic_inc(&global_pdf[index]);
+    }
+  }
 }
