@@ -48,7 +48,7 @@ struct rbtree {
 
 int eq(data_t a, data_t b)
 {
-  return all(a == b);
+  return a == b;
 }
 
 int cmp(data_t a, data_t b)
@@ -223,12 +223,11 @@ void rbtree_insert(global struct rbtree *tree, data_t data)
   int cur_node;
   int dir;  /* 0 = left, 1 = right */
   int stack_pos;
-  int new_node = rbtree_mknode(tree, data);
 
   /* Check if this is the first node added. */
   if (LEAF == tree->root) {
-    tree->root = new_node;
-    rbtree_colour_black(tree, new_node);
+    tree->root = rbtree_mknode(tree, data);
+    rbtree_colour_black(tree, tree->root);
     return;
   }
 
@@ -236,10 +235,10 @@ void rbtree_insert(global struct rbtree *tree, data_t data)
   cur_node = tree->root;
   for (stack_pos = 0; stack_pos < kMaxDepth; ++stack_pos)
   {
-    if (eq(rbtree_data(tree, cur_node), rbtree_data(tree, new_node)))
+    if (eq(rbtree_data(tree, cur_node), data))
       return;  /* duplicates ignored */
 
-    dir = cmp(rbtree_data(tree, cur_node), rbtree_data(tree, new_node));
+    dir = cmp(rbtree_data(tree, cur_node), data);
 
     /* Put the node and direction onto the stack */
     tree->node_stack[stack_pos] = cur_node;
@@ -247,7 +246,7 @@ void rbtree_insert(global struct rbtree *tree, data_t data)
 
     if (LEAF == tree->nodes[cur_node].child[dir]) {
       /* No node.  Insert here. */
-      tree->nodes[cur_node].child[dir] = new_node;  
+      tree->nodes[cur_node].child[dir] = rbtree_mknode(tree, data);
       break;
     }
 
