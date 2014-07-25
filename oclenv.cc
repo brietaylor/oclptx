@@ -29,6 +29,8 @@
  *
  */
 
+#include <stdlib.h>
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -172,6 +174,9 @@ cl::Buffer * OclEnv::GetDevicePdf(uint32_t device_num)
 //
 void OclEnv::OclInit()
 {
+  // Prevent Nvidia from (erroneously) caching stale build files.
+  setenv("CUDA_CACHE_DISABLE", "1", 1);
+
   cl::Platform::get(&(this->ocl_platforms));
 
   if (0 == this->ocl_platforms.size())
