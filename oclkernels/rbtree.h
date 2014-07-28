@@ -22,7 +22,7 @@
  * both extremely pessimistic and geometrically impossible.  Therefore, figure
  * out a more sensible limit!
  */
-#define kMaxSize  2044
+#define kMaxSize  2041
 #define kMaxDepth 12   /* 2*log2(kMaxSize) */
 
 #define BLACK 0
@@ -43,8 +43,8 @@ struct rbtree {
   short root; /* 2 bytes */
   short node_stack[kMaxDepth]; /* 24 bytes */
   short dir_stack[kMaxDepth]; /* 24 bytes */
-  char pad[4]; /* We're 12 bytes short of a nice round 16384B */
-} __attribute__((packed));  /* shouldn't affect the structure packing. */
+  char pad[4]; /* We're 4 bytes short of a nice round 16384B */
+};
 
 int eq(data_t a, data_t b)
 {
