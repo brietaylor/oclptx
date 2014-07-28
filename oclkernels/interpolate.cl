@@ -64,6 +64,55 @@ float3 get_f_theta_phi(global float *f_samples,
   return (float3) (f, theta, phi);
 }
 
+#if WAYAND
+#define WAYOP(chk, pts) ((chk) &= (pts))
+#else  /* WAYOR */
+#define WAYOP(chk, pts) ((chk) |= (pts))
+#endif
+
+void do_particle_finish(uint glid,
+                        const struct particle_attrs attrs,
+                        ushort done,
+                        ushort steps, //RW
+                        global ushort *particle_exclusion,
+                        global ushort *particle_waypoints,
+                        global struct rbtree *position_set,
+                        global uint *global_pdf)
+{
+  int i;
+  int waypoint_check;
+  if (steps < attrs.min_steps)
+    return;
+
+#if EXCLUSION
+  if (particle_exclusion[glid])
+    return;
+#endif  /* EXCLUSION */
+
+#if WAYPOINTS
+  /* TODO(jeff/steve): double check this code.  WAYOR seems broken to Jeff. */
+  waypoint_check = 1;
+  for (i = 0; i < attrs.n_waypoint_masks; i++)
+    WAYOP(waypoint_check, particle_waypoints[glid*attrs.n_waypoint_masks + i]);
+
+  if (waypoint_check == 0)
+    return;
+#endif  /* WAYPOINTS */
+
+  if ((done)
+   && (BREAK_INVALID  != done)
+   && (BREAK_INIT     != done)
+   && (STILL_FINISHED != done)) {
+    /* Walk the tree out of order */
+    for (i = 0; i < position_set->num_entries; ++i) {
+      /* position = x*ny*nz + y*nz + z */
+      int index = rbtree_data(position_set, i);
+
+      atomic_inc(&global_pdf[index]);
+    }
+  }
+}
+
 __kernel void OclPtxInterpolate(
   struct particle_attrs attrs,  /* RO */
   __global struct particle_data *state,  /* RW */
@@ -309,16 +358,12 @@ __kernel void OclPtxInterpolate(
     particle_steps[glid] = 0;
 
   /* If finished, add steps to global pdf by walking the set out-of-order */
-  if ((BREAK_INIT != particle_done[glid])
-   && (BREAK_INVALID != particle_done[glid])
-   && (particle_done[glid] > 0)
-   && (STILL_FINISHED != particle_done[glid])) {
-    /* Walk the tree out of order */
-    for (i = 0; i < position_set[glid].num_entries; ++i) {
-      /* position = x*ny*nz + y*nz + z */
-      int index = rbtree_data(&position_set[glid], i);
-
-      atomic_inc(&global_pdf[index]);
-    }
-  }
+  do_particle_finish(glid,
+                     attrs,
+                     particle_done[glid],
+                     particle_steps[glid],
+                     particle_exclusion,
+                     particle_waypoints,
+                     &position_set[glid],
+                     global_pdf);
 }
