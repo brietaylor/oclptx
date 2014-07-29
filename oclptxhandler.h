@@ -84,6 +84,8 @@ class OclPtxHandler{
   cl::CommandQueue* cq_;
   cl::Kernel* ptx_kernel_;
   cl::Kernel* sum_kernel_;
+  size_t wg_size_;
+  int num_wgs_;
 
   // Particle Data
   cl::Buffer *gpu_data_;  // Type particle_data

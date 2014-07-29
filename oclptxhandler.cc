@@ -54,9 +54,19 @@ void OclPtxHandler::Init(
 
   gpu_global_pdf_ = global_pdf;
 
+  // TODO(steve): Make it possible to get workgroup size
+  // (CL_KERNEL_WORKGROUP_SIZE I think) from oclenv.
+  wg_size_ = 64;
+
   // TODO(jeff): Check if we can actually allocate buffers this big.
-  attrs_.particles_per_side = env_dat_->dynamic_mem_left / ParticleSize() / 2;
-  printf("Allocating %i particles\n", attrs_.particles_per_side * 2);
+  int max_particles = env_dat->dynamic_mem_left / ParticleSize();
+
+  num_wgs_ = max_particles / wg_size_ / 2;
+
+  attrs_.particles_per_side = wg_size_ * num_wgs_;
+  assert(attrs_.particles_per_side <= max_particles);
+  printf("Allocating %i particles in %i groups.\n",
+      attrs_.particles_per_side, num_wgs_);
 
   InitParticles();
 }
@@ -344,6 +354,7 @@ void OclPtxHandler::RunInterpKernel(int side)
 {
   cl_int ret;
   cl::NDRange particles_to_compute(attrs_.particles_per_side);
+  cl::NDRange particle_workgroups(wg_size_);
   cl::NDRange particle_offset(attrs_.particles_per_side * side);
 
   ptx_kernel_->setArg(
@@ -375,7 +386,7 @@ void OclPtxHandler::RunInterpKernel(int side)
     *(ptx_kernel_),
     particle_offset,
     particles_to_compute,
-    cl::NullRange,
+    particle_workgroups,
     NULL,
     NULL);
   if (CL_SUCCESS != ret)
