@@ -355,7 +355,7 @@ inline oclptxOptions::oclptxOptions():
     std::string("\tForce a starting fibre for tracking - default=1, i.e. first\
       fibre orientation. Only works if randfib==0"), false, requires_argument),
 
-  rseed(std::string("--rseed"), 12345,
+  rseed(std::string("--rseed"), 0,
     std::string("\tRandom seed"), false, requires_argument),
 
   mem_risk_frac(std::string("--memrisk"), 0.8,

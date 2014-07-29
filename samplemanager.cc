@@ -279,6 +279,8 @@ void SampleManager::ParseCommandLine(int argc, char** argv)
     _oclptxOptions.status();
   }
 
+  srand(_oclptxOptions.rseed.value());
+
   if (_oclptxOptions.matrix1out.value() ||
     _oclptxOptions.matrix3out.value())
   {
