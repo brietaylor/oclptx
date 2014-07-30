@@ -58,7 +58,7 @@ int cmp(data_t a, data_t b)
 
 int is_red(global struct rbtree *tree, int node)
 {
-  if ((LEAF != node) && (RED == ((1<<31) & tree->nodes[node].data)))
+  if ((LEAF != node) && ((1<<31) & tree->nodes[node].data))
     return 1;
   else
     return 0;
