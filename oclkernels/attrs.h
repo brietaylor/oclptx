@@ -34,7 +34,7 @@ struct particle_data
 // Struct full of useful constants.
 struct particle_attrs
 {
-  float4 brain_mask_dim;
+  float3 brain_mask_dim;
   int steps_per_kernel;
   int max_steps;
   int min_steps;

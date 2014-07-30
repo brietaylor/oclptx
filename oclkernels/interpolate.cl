@@ -47,7 +47,8 @@ float3 get_f_theta_phi(global float *f_samples,
   /* Volume Fraction Selection */
   rng_output = (ulong3) (Rand(rng), Rand(rng), Rand(rng));
 
-  current_select_vertex += (convert_float3(rng_output) > vol_frac)? 1: 0;
+  current_select_vertex +=
+    convert_uint3((convert_float3(rng_output) > vol_frac)? 1: 0);
 
   /* pick flow vertex */
   diffusion_index =
@@ -245,7 +246,7 @@ __kernel void OclPtxInterpolate(
 
     /* Curvature threshold check */
     new_dr = normalize(new_dr);
-    if (particle_steps[glid] > 1 
+    if (particle_steps[glid] > 1
       && dot(new_dr, state[glid].dr) < attrs.curvature_threshold)
     {
       particle_done[glid] = BREAK_CURV;

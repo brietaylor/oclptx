@@ -93,6 +93,8 @@ class OclEnv{
 
     std::string OclErrorStrings(cl_int error);
 
+    size_t GetKernelWorkGroupInfo(uint32_t device);
+
     //
     // Resource Allocation
     //

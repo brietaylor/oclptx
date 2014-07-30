@@ -29,7 +29,10 @@ static void die(int reason)
     exit(-1);
   }
   else
+  {
+    printf("DIE : %i \n", reason);
     abort();
+  }
 }
 
 void OclPtxHandler::Init(

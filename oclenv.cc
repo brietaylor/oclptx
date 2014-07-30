@@ -250,6 +250,14 @@ unsigned int OclEnv::HowManyCQ()
   return this->ocl_device_queues.size();
 }
 
+size_t OclEnv::GetKernelWorkGroupInfo(uint32_t device)
+{
+  size_t wg_size;
+  this->ocl_kernel_set.at(device).getWorkGroupInfo<size_t>(
+    this->ocl_devices.at(device), CL_KERNEL_WORK_GROUP_SIZE, &wg_size);
+  return wg_size;
+}
+
 //
 //
 //

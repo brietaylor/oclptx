@@ -347,7 +347,7 @@ const unsigned short int* SampleManager::GetTerminationMaskToArray()
 
 vector<unsigned short int*>* SampleManager::GetWayMasksToVector()
 {
-  vector<unsigned short int*>* waymasks = 
+  vector<unsigned short int*>* waymasks =
     new vector<unsigned short int*>;
   for (unsigned int i = 0; i < _wayMasks.size(); i++)
   {
@@ -457,10 +457,10 @@ const BedpostXData* SampleManager::GetFDataPtr()
 
 cl_float4 SampleManager::brain_mask_dim()
 {
-  return cl_float4{{_brainMask.xdim(),
+  return cl_float3{{_brainMask.xdim(),
                     _brainMask.ydim(),
-                    _brainMask.zdim(),
-                    1.}};
+                    _brainMask.zdim()
+                  }};
 }
 
 SampleManager::SampleManager():
