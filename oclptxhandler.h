@@ -55,6 +55,7 @@ class OclPtxHandler{
       cl::Kernel* sum_kernel,
       struct particle_attrs *attrs,
       FILE *path_dump_fd,
+      int num_wgs,
       EnvironmentData *env_dat,
       cl::Buffer *global_pdf);
   ~OclPtxHandler();

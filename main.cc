@@ -139,6 +139,7 @@ int main(int argc, char **argv)
                     env.GetSumKernel(i),
                     &attrs,
                     global_fd,
+                    env.GetKernelWorkGroupInfo(i),
                     env.GetEnvData(),
                     env.GetDevicePdf(i));
 

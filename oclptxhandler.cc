@@ -42,6 +42,7 @@ void OclPtxHandler::Init(
   cl::Kernel *sum_kernel,
   struct OclPtxHandler::particle_attrs *attrs,
   FILE *path_dump_fd,
+  int wg_size,
   EnvironmentData *env_dat,
   cl::Buffer *global_pdf)
 {
@@ -58,7 +59,7 @@ void OclPtxHandler::Init(
 
   // TODO(steve): Make it possible to get workgroup size
   // (CL_KERNEL_WORKGROUP_SIZE I think) from oclenv.
-  wg_size_ = 64;
+  wg_size_ = wg_size;
 
   // TODO(jeff): Check if we can actually allocate buffers this big.
   int max_particles = env_dat->dynamic_mem_left / ParticleSize();
