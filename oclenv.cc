@@ -367,6 +367,15 @@ void OclEnv::CreateKernels( std::string kernel_name )
   if (this->env_data.aniso_const)
     define_list += " -D ANISOTROPIC";
 
+  // Compute the rbtree size
+  char buf[32];
+  snprintf(buf, 32, " -D kMaxSize=%i", env_data.max_steps);
+  define_list += buf;
+
+  snprintf(buf, 32, " -D kMaxDepth=%i",
+      (int) (2 * std::ceil(std::log2(env_data.max_steps))));
+  define_list += buf;
+
   std::ifstream main_stream(interp_kernel_source);
   std::string main_code(  (std::istreambuf_iterator<char>(main_stream) ),
                             (std::istreambuf_iterator<char>()));

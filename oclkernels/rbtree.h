@@ -16,17 +16,11 @@
  * http://eternallyconfuzzled.com/tuts/datastructures/jsw_tut_rbtree.aspx
  */
 
-/* TODO(jeff): kMaxSize should *not* be hardcoded here!
- * TODO(jeff): kMaxSteps should *not* be the buffer size.  If it were possible
+/* TODO(jeff): kMaxSteps should *not* be the buffer size.  If it were possible
  * for the particle to touch a new box with each step, it would be, but this is
  * both extremely pessimistic and geometrically impossible.  Therefore, figure
  * out a more sensible limit!
  */
-#define kMaxSize  2036
-#define kMaxDepth 22   /* 2*log2(kMaxSize) */
-
-#define BLACK 0
-#define RED   1
 
 #define LEAF -1
 
@@ -43,8 +37,7 @@ struct rbtree {
   short root; /* 2 bytes */
   short node_stack[kMaxDepth]; /* 2 * 22 = 44 bytes */
   short dir_stack[kMaxDepth]; /* 2 * 22 = 44 bytes */
-  char pad[4]; /* We're 4 bytes short of a nice round 16384B */
-};
+} __attribute__((aligned(16)));
 
 int eq(data_t a, data_t b)
 {

@@ -6,11 +6,11 @@
 
 #include "oclptxhandler.h"
 
-#include <cstdlib>
-
 #include <assert.h>
+#include <math.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #ifdef __APPLE__
@@ -18,7 +18,6 @@
 #else
 #include <CL/cl.hpp>
 #endif
-
 
 static void die(int reason)
 {
@@ -71,6 +70,18 @@ void OclPtxHandler::Init(
   InitParticles();
 }
 
+static size_t rbtree_size(const struct OclPtxHandler::particle_attrs attrs_)
+{
+  size_t size = attrs_.max_steps * 8 // 8 == sizeof(struct rbtree_node)
+                     + 2 * ceil(log2(attrs_.max_steps)) * 2 * sizeof(cl_short)
+                     + 2 * sizeof(cl_short);
+
+  // Round up to next 16
+  size = size - (size - 1) % 16 + 15;
+
+  return size;
+}
+
 size_t OclPtxHandler::ParticleSize()
 {
   size_t size = 0;
@@ -79,7 +90,7 @@ size_t OclPtxHandler::ParticleSize()
   size += sizeof(cl_ushort);  // complete
   size += sizeof(cl_ushort);  // step_count
 
-  size += 16384;  // position rbtree
+  size += rbtree_size(attrs_);
 
   // Per workgroup brain.
   size += ((attrs_.sample_nx 
@@ -119,7 +130,7 @@ void OclPtxHandler::InitParticles()
   gpu_sets_ = new cl::Buffer(
       *context_,
       CL_MEM_READ_WRITE,
-      2 * attrs_.particles_per_side * 16384);  // 16384 == sizeof(struct rbtree)
+      2 * attrs_.particles_per_side * rbtree_size(attrs_));
   if (!gpu_sets_)
     abort();
 
