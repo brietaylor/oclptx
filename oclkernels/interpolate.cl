@@ -77,7 +77,7 @@ void do_particle_finish(uint glid,
                         global ushort *particle_exclusion,
                         global ushort *particle_waypoints,
                         global struct rbtree *position_set,
-                        global uint *global_pdf)
+                        global uint *local_pdf)
 {
   int i;
   int waypoint_check;
@@ -107,8 +107,9 @@ void do_particle_finish(uint glid,
     for (i = 0; i < position_set->num_entries; ++i) {
       /* position = x*ny*nz + y*nz + z */
       int index = rbtree_data(position_set, i);
+      int num_entries = attrs.sample_nx * attrs.sample_ny * attrs.sample_nz;
 
-      atomic_inc(&global_pdf[index]);
+      atomic_inc(&local_pdf[index + num_entries * get_group_id(0)]);
     }
   }
 }
@@ -124,7 +125,7 @@ __kernel void OclPtxInterpolate(
 
   // Output
   __global ushort *particle_done, //RW
-  __global uint   *global_pdf, //RW
+  __global uint   *local_pdf, //RW
   __global ushort *particle_waypoints, //W
   __global ushort *particle_exclusion, //W
   __global float3 *particle_loopcheck_lastdir, //RW
@@ -365,5 +366,5 @@ __kernel void OclPtxInterpolate(
                      particle_exclusion,
                      particle_waypoints,
                      &position_set[glid],
-                     global_pdf);
+                     local_pdf);
 }

@@ -52,6 +52,7 @@ struct particle_attrs
   int fibst;
   int randfib;
   float fibthresh;
+  int num_wg;
 } __attribute__((aligned(16)));
 
 #endif  // ATTRS_H_

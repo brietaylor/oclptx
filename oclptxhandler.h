@@ -44,6 +44,7 @@ class OclPtxHandler{
     cl_int fibst;
     cl_int randfib;
     cl_float fibthresh;
+    cl_int num_wg;
   } __attribute__((aligned(16)));
 
   OclPtxHandler() {}
@@ -68,13 +69,14 @@ class OclPtxHandler{
   void ReadStatus(int offset, int count, cl_ushort *ret);
   // Dump path to file.
   void DumpPath(int offset, int count);
+  // Aggregate the paths.
+  void RunSumKernel();
 
  private:
   size_t ParticleSize();
   void InitParticles();
   void SetInterpArg(int pos, cl::Buffer *buf);
   void SetSumArg(int pos, cl::Buffer *buf);
-  void RunSumKernel(int side);
   void RunInterpKernel(int side);
 
   struct particle_attrs attrs_;
@@ -85,7 +87,6 @@ class OclPtxHandler{
   cl::Kernel* ptx_kernel_;
   cl::Kernel* sum_kernel_;
   size_t wg_size_;
-  int num_wgs_;
 
   // Particle Data
   cl::Buffer *gpu_data_;  // Type particle_data
@@ -95,6 +96,7 @@ class OclPtxHandler{
   cl::Buffer *gpu_exclusion_;
   cl::Buffer *gpu_loopcheck_;
   cl::Buffer *gpu_global_pdf_;
+  cl::Buffer *gpu_local_pdf_;
 
   // Debug Data
   cl::Buffer *gpu_path_;  // Type ulong

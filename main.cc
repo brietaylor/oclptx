@@ -191,7 +191,14 @@ int main(int argc, char **argv)
 
   end_timer("track");
 
+  puts("Writing to file...");
+  start_timer();
+
+  for (int i = 0; i < num_dev; ++i)
+    handler[i].RunSumKernel();
   env.PdfsToFile("pdf_out");
+
+  end_timer("write to file");
 
   delete[] handler;
 
